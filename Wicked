@@ -1,0 +1,10 @@
+<?
+
+$config = array(
+  'requires'=>array(
+    'activerecord',
+    'utf8',
+  ),
+  'object_cache'=>array(),
+  'type_cache'=>array(),
+);
