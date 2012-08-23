@@ -4,6 +4,30 @@ class MetaMixin extends Mixin
 {
   static $type_cache = array();
   static $value_cache = array();
+  static $prefix = '';
+  
+  static function init()
+  {
+    $ar_config = W::module('activerecord');
+    self::$prefix = $ar_config['class_prefix'];
+
+    $p = self::$prefix;
+    if($p)
+    {
+      $p = W::singularize(W::tableize($p)).'_';
+    }
+    
+    W::register_action($p.'meta_value_serialize', function($m) {
+      $v = json_encode(W::utf8_deep_encode($m->value));
+      if($v===false) W::error(json_last_error());
+      $m->value = $v;
+    });
+    
+    W::register_action($p.'meta_value_unserialize', function($m) {
+      $m->value = json_decode($m->value, true);
+    });
+    
+  }
   
   static function meta_get($o, $name, $default=null)
   {
@@ -29,7 +53,7 @@ class MetaMixin extends Mixin
     if(!isset($cache[$class])) $cache[$class] = array();
     if(isset($cache[$class][$name])) return $cache[$class][$name];
     
-    $type = MetaType::find_or_create_by(array(
+    $type = call_user_func(self::$prefix."MetaType::find_or_create_by", array(
       'conditions'=>array('object_type = ? and name = ?', $class, $name),
       'attributes'=>array(
         'object_type'=>$class,
@@ -60,7 +84,7 @@ class MetaMixin extends Mixin
     if(!isset($cache[$type->id])) $cache[$type->id] = array();
     if(isset($cache[$type->id][$o->id])) return $cache[$type->id][$o->id];
     
-    $m = MetaValue::find_or_create_by( array(
+    $m = call_user_func(self::$prefix."MetaValue::find_or_create_by", array(
       'conditions'=>array('type_id = ? and object_id = ?', $type->id, $o->id),
       'attributes'=>array(
         'type_id'=>$type->id,
